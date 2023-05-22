@@ -1,0 +1,3 @@
+[run]
+source = sanity
+omit = *tests*

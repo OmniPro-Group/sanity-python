@@ -3,7 +3,7 @@ import requests
 import mimetypes
 
 from sanity import apiclient, exceptions
-from webhook import parse_signature, timestamp_is_valid, contains_valid_signature, get_json_payload
+from sanity.webhook import parse_signature, timestamp_is_valid, contains_valid_signature, get_json_payload
 
 
 class Client(apiclient.ApiClient):

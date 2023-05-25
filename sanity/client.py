@@ -3,6 +3,7 @@ import requests
 import mimetypes
 
 from sanity import apiclient, exceptions
+from webhook import parse_signature, timestamp_is_valid, contains_valid_signature, get_json_payload
 
 
 class Client(apiclient.ApiClient):
@@ -35,11 +36,12 @@ class Client(apiclient.ApiClient):
         # API: https://<projectId>.api.sanity.io/v<YYYY-MM-DD>/<path>
         # API CDN: https://<projectId>.apicdn.sanity.io/v<YYYY-MM-DD>/<path>
 
-        if use_cdn and api_host is None:
+        if use_cdn is True and api_host is None:
             api_host = f"https://{project_id}.apicdn.sanity.io/v{self.api_version}"
-        elif not use_cdn and api_host is None:
+        elif use_cdn is False and api_host is None:
             api_host = f"https://{project_id}.api.sanity.io/v{self.api_version}"
 
+        logger.debug(f"API Host: {api_host}")
         super().__init__(logger=logger, base_uri=api_host)
 
     def query(self, groq: str, variables: dict = None, explain: bool = False, method="GET"):
@@ -162,3 +164,28 @@ class Client(apiclient.ApiClient):
             )
         except exceptions.SanityIOError as e:
             raise e
+
+
+def validate_webhook(event: dict, secret: str):
+    headers = event.get("headers", {})
+
+    timestamp, signatures = parse_signature(
+        signature_header=headers.get("sanity-webhook-signature")
+    )
+
+    if not timestamp or not timestamp_is_valid(timestamp):
+        return False
+
+    return contains_valid_signature(
+        payload=event["body"],
+        timestamp=timestamp,
+        signatures=signatures,
+        secret=secret
+    )
+
+
+def parse_webhook(event: dict):
+    try:
+        return get_json_payload(event)
+    except ValueError as err:
+        raise err

@@ -15,6 +15,7 @@ class Client(apiclient.ApiClient):
         api_host=None,
         api_version="2023-05-03",
         use_cdn=True,
+        perspective="raw",
         token=None,
     ):
         """
@@ -26,12 +27,22 @@ class Client(apiclient.ApiClient):
         :param api_host: The base URI to the API
         :param api_version: API Version to use (format YYYY-MM-DD)
         :param use_cdn: Use CDN endpoints for quicker responses
+        :param perspective: Use perspective - raw (default), published, previewDrafts
         :param token: API token
         """
         self.project_id = project_id
         self.dataset = dataset
         self.api_version = api_version
         self.token = token
+        self.perspective = perspective
+
+        allowed_perspectives = ["raw", "published", "previewDrafts"]
+        if self.perspective not in allowed_perspectives:
+            logger.error(f"Perspective must be one of: {allowed_perspectives}, setting to raw")
+            self.perspective = "raw"
+        if self.perspective == "previewDrafts" and use_cdn:
+            logger.error(f"Perspective set to previewDrafts, turning off useCDN")
+            use_cdn = False
 
         # API: https://<projectId>.api.sanity.io/v<YYYY-MM-DD>/<path>
         # API CDN: https://<projectId>.apicdn.sanity.io/v<YYYY-MM-DD>/<path>
@@ -69,7 +80,8 @@ class Client(apiclient.ApiClient):
         if method.upper() == "GET":
             params = {
                 "query": groq,
-                "explain": "true" if explain else "false"
+                "explain": "true" if explain else "false",
+                "perspective": self.perspective,
             }
             if variables:
                 for k, v in variables.items():

@@ -1,4 +1,5 @@
 """Sanity.io HTTP API Python Client"""
+import json
 import requests
 import mimetypes
 
@@ -162,6 +163,72 @@ class Client(apiclient.ApiClient):
             return self.request(
                 method="POST", url=url, data=data, content_type=mime_type
             )
+        except exceptions.SanityIOError as e:
+            raise e
+
+    def history_document_revision(self, document_id, revision=None, dt=None):
+        """
+
+        GET /v2021-06-07/data/history/:dataset/documents/:documentId
+
+        :param document_id:
+        :param revision:
+        :param dt: format 2019-05-28T17:18:39Z
+        :return:
+        :rtype: json
+        """
+        url = f"/data/history/{self.dataset}/documents/{document_id}"
+
+        params = {
+            "revision": revision,
+            "time": dt,
+        }
+        try:
+            return self.request(
+                method="GET", url=url, data=None, params=params
+            )
+        except exceptions.SanityIOError as e:
+            raise e
+
+    def history_document_transactions(
+            self, document_ids: list, exclude_content=True, from_time=None, to_time=None,
+            from_transaction=None, to_transaction=None, authors=None, reverse=False, limit=100
+    ):
+        """
+
+        GET /v2021-06-07/data/history/:dataset/transactions/:document_ids
+
+        :param document_ids: comma separated list
+        :param exclude_content:
+        :param from_time: format 2019-05-28T17:18:39Z
+        :param to_time: format 2019-05-28T17:18:39Z
+        :param from_transaction:
+        :param to_transaction:
+        :param authors:
+        :param reverse:
+        :param limit:
+        :return:
+        :rtype: list
+        """
+        doc_ids = ",".join(document_ids)
+        url = f"/data/history/{self.dataset}/transactions/{doc_ids}"
+
+        params = {
+            "excludeContent": exclude_content,
+            "fromTime": from_time,
+            "toTime": to_time,
+            "fromTransaction": from_transaction,
+            "toTransaction": to_transaction,
+            "authors": authors,
+            "reverse": reverse,
+            "limit": limit,
+        }
+        try:
+            data = self.request(
+                method="GET", url=url, data=None, params=params,
+                load_json=False, parse_ndjson=True
+            )
+            return data
         except exceptions.SanityIOError as e:
             raise e
 

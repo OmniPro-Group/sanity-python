@@ -46,7 +46,7 @@ class ApiClient:
             }
         return {}
 
-    def request(self, method, url, data=None, params=None, content_type=None):
+    def request(self, method, url, data=None, params=None, content_type=None, load_json=True, parse_ndjson=False):
         if type(data) == dict:
             data = json.dumps(data)
 
@@ -60,7 +60,17 @@ class ApiClient:
         result = self.session.request(
             method=method, url=full_url, data=data, headers=h
         )
-        if result.status_code == 200:
+        if result.status_code == 200 and load_json:
             return json.loads(result.text)
+        elif result.status_code == 200 and parse_ndjson:
+            results = []
+            for ndjson_line in result.text.splitlines():
+                if not ndjson_line.strip():
+                    continue  # ignore empty lines
+                json_line = json.loads(ndjson_line)
+                results.append(json_line)
+            return results
+        else:
+            self.logger.error(result.text)
 
         raise exceptions.SanityIOError

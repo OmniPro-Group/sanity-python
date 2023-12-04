@@ -70,5 +70,7 @@ class ApiClient:
                 json_line = json.loads(ndjson_line)
                 results.append(json_line)
             return results
+        else:
+            self.logger.error(result.text)
 
         raise exceptions.SanityIOError
